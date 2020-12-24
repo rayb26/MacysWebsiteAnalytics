@@ -35,6 +35,7 @@ public class DynamicScraper extends StaticScraper implements Runnable {
 
             try {
 
+                System.out.println("Dynamic Scrapper Running...");
                 fetchProductID();
                 fetchSalePrice();
 
@@ -45,8 +46,8 @@ public class DynamicScraper extends StaticScraper implements Runnable {
                     db.insertIntoDynamicTable(productIDListDynamic.get(element), productSalePriceDynamic.get(element),
                             "Yes", getTimeStamp(), Database.TABLE_DYNAMIC_DATA);
                 }
-
                 Thread.sleep(300000);
+                System.out.println("Dynamic Scraper pausing for 5 minutes..");
             } catch (InterruptedException | IOException e) {
                 regenerate = false;
                 e.printStackTrace();
@@ -75,7 +76,6 @@ public class DynamicScraper extends StaticScraper implements Runnable {
             productIDListDynamic.add(productIDCleanup);
 
         }
-        System.out.println("Product id list size " + productIDListDynamic.size());
     }
 
     /**
@@ -95,9 +95,6 @@ public class DynamicScraper extends StaticScraper implements Runnable {
         for (Element element : elements) {
             productSalePriceDynamic.add(element.text());
         }
-
-        System.out.println("Sale price size " + productSalePriceDynamic.size()
-        );
     }
     /**
      * Method obtains current timestamp to be matched with when the information was acquired from

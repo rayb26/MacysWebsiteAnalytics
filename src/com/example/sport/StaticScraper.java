@@ -42,6 +42,7 @@ public class StaticScraper implements Runnable {
         db.createStaticTable(Database.CREATE_TABLE_STATIC);
 
         try {
+            System.out.println("Static Scraper Running");
             fetchSalePrice();
             fetchProductID();
             fetchProductName();
@@ -55,6 +56,8 @@ public class StaticScraper implements Runnable {
             for (int i = 0; i < minElement; i++) {
                 db.insertIntoStaticTable(productIDList.get(i), productNameList.get(i), productURL_List.get(i), productImageURL.get(i), productSalePrice.get(i), Database.TABLE_STATIC_DATA, "Yes");
             }
+            System.out.println("Static Scraper Finished");
+
 
         } catch (IOException e) {
             System.out.println("Error" );
@@ -78,8 +81,6 @@ public class StaticScraper implements Runnable {
             String productName = element.attributes().get("title");
             productNameList.add(productName);
         }
-
-        System.out.println("Product name list size " + productNameList.size());
     }
 
     /**
@@ -100,8 +101,6 @@ public class StaticScraper implements Runnable {
             productIDList.add(productIDCleanup);
 
         }
-        System.out.println("Product id list size " + productIDList.size());
-
     }
 
     /**
@@ -119,10 +118,7 @@ public class StaticScraper implements Runnable {
 
             String productLink = "www.macys.com/" + element.attributes().get("href");
             productURL_List.add(productLink);
-            //System.out.println(productLink);
         }
-
-        System.out.println("Product url size " + productURL_List.size());
     }
 
     /**
@@ -138,8 +134,6 @@ public class StaticScraper implements Runnable {
         for (Element element : elements) {
             productImageURL.add(element.attributes().get("src"));
         }
-
-        System.out.println("Image url size " + productImageURL.size());
     }
 
     /**
@@ -158,9 +152,6 @@ public class StaticScraper implements Runnable {
         for (Element element : elements) {
             productSalePrice.add(element.text());
         }
-
-        System.out.println("Sale price size " + productSalePrice.size()
-        );
     }
 
     /**
