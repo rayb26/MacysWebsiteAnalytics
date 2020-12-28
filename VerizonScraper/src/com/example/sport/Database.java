@@ -10,7 +10,7 @@ import java.sql.*;
  */
 public class Database {
 
-    public static final String DB_NAME = "MacyScraper.db";
+    public static final String DB_NAME = "MacyAnalytics.db";
 
     public static final String CONNECTION = "jdbc:sqlite:C:\\Users\\sport\\Desktop\\Macy_WebScraper\\" + DB_NAME;
 
@@ -35,7 +35,7 @@ public class Database {
      */
     public static final String TABLE_DYNAMIC_DATA = "DYNAMIC_WEB_ANALYTICS";
     public static final String COLUMN_PRODUCT_ID_DYNAMIC = "Product_ID";
-    public static final String COLUMN_PRODUCT_SALE_PRICE_DYNAMIC = "Price";
+    public static final String COLUMN_PRODUCT_SALE_PRICE_DYNAMIC = "Sale_Price";
     public static final String COLUMN_TIMESTAMP_DYNAMIC = "Timestamp";
     public static final String COLUMN_IN_STOCK_DYNAMIC = "Stock";
 
@@ -70,7 +70,6 @@ public class Database {
             System.out.println("Error");
         }
     }
-
     /**
      * Creating database to hold static website information below.
      *

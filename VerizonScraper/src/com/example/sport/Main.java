@@ -12,11 +12,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        StaticScraper scraper = new StaticScraper();
-        scraper.run();
-
-        DynamicScraper dynamicScraper = new DynamicScraper();
-        dynamicScraper.run();
+        new Thread(new StaticScraper()).start();
+        new Thread(new DynamicScraper()).start();
 
     }
 }

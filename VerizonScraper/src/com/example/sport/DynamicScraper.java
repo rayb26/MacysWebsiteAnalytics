@@ -20,11 +20,9 @@ public class DynamicScraper extends StaticScraper implements Runnable {
 
     List<String> productIDListDynamic;
     List<String> productSalePriceDynamic;
-
     /**
      * Method uses a thread and a while loop that runs every 5 minutes.
      */
-
     @Override
     public void run() {
 
@@ -32,21 +30,21 @@ public class DynamicScraper extends StaticScraper implements Runnable {
 
         while (regenerate) {
             db.createDynamicTable(Database.CREATE_TABLE_DYNAMIC);
-
             try {
 
+                System.out.println("Dynamic Scrapper Running...");
                 fetchProductID();
                 fetchSalePrice();
 
                 int minElement = Math.min(productIDListDynamic.size(), productSalePriceDynamic.size());
 
-
                 for (int element = 0; element < minElement; element++) {
                     db.insertIntoDynamicTable(productIDListDynamic.get(element), productSalePriceDynamic.get(element),
-                            "Yes", getTimeStamp(), Database.TABLE_DYNAMIC_DATA);
+                            "In Stock", getTimeStamp(), Database.TABLE_DYNAMIC_DATA);
                 }
-
+                System.out.println("Dynamic Scraper waiting for 5 minutes");
                 Thread.sleep(300000);
+                System.out.println("Dynamic Scraper restarted");
             } catch (InterruptedException | IOException e) {
                 regenerate = false;
                 e.printStackTrace();
@@ -54,7 +52,6 @@ public class DynamicScraper extends StaticScraper implements Runnable {
 
         }
     }
-
     /**
      * Method overrides the fetchProductID method in superclass to retrieve product identification
      * information.
@@ -66,38 +63,36 @@ public class DynamicScraper extends StaticScraper implements Runnable {
         productIDListDynamic = new ArrayList<>();
 
         Document page = Jsoup.connect(website).get();
-        Elements elements = page.getElementsByClass("productDescLink");
+        Elements elementsByClass = page.select("div.productThumbnailImage");
 
-        for (Element element : elements) {
+        for (Element element : elementsByClass) {
+            Elements elementsBySource = element.getElementsByClass("productDescLink");
 
-            String productID = element.attributes().get("href");
-            String productIDCleanup = productID.substring(productID.lastIndexOf("?") + 4, productID.indexOf("&"));
-            productIDListDynamic.add(productIDCleanup);
+            for (Element elementsByLink : elementsBySource) {
+                String productID = elementsByLink.attributes().get("href");
+                productIDListDynamic.add(productID.substring(productID.indexOf("?") + 4, productID.indexOf("&")));
+            }
 
         }
-        System.out.println("Product id list size " + productIDListDynamic.size());
     }
 
     /**
-     * Method overrides the fetchSalePrice method in superclass to retrieve price
+     * Method overrides the fetchSalePrice method in superclass to retrieve sale price
      * information.
      *
      * @throws IOException
      */
-    @Override
     public void fetchSalePrice() throws IOException {
         productSalePriceDynamic = new ArrayList<>();
 
         Document page = Jsoup.connect(website).get();
 
-        Elements elements = page.select("span.regular.originalOrRegularPriceOnSale");
+        Elements elements = page.select("span.discount");
 
         for (Element element : elements) {
-            productSalePriceDynamic.add(element.text());
+            String salePriceCleanup = "$" + element.text().substring(element.text().indexOf("$") + 1);
+            productSalePriceDynamic.add(salePriceCleanup);
         }
-
-        System.out.println("Sale price size " + productSalePriceDynamic.size()
-        );
     }
     /**
      * Method obtains current timestamp to be matched with when the information was acquired from
@@ -107,7 +102,6 @@ public class DynamicScraper extends StaticScraper implements Runnable {
      */
     private String getTimeStamp() {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-
         return timestamp.toString();
     }
 
