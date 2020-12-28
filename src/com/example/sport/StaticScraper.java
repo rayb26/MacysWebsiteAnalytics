@@ -8,10 +8,11 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 /**
  * Class handles static information of obtaining product name, product id, product url,
- * image url, sale price, or whether the product is out of stock, and saves data
+ * image url, price, or whether the product is out of stock, and saves data
  * into SQL database.
  *
  * @author Rayhan Biju
@@ -21,12 +22,11 @@ import java.util.List;
 public class StaticScraper implements Runnable {
     Database db = new Database();
 
-
     List<String> productNameList;
     List<String> productIDList;
     List<String> productURL_List;
     List<String> productImageURL;
-    List<String> productSalePrice;
+    List<String> productPrice;
 
     /*
     Field holds website to crawl into.
@@ -42,44 +42,45 @@ public class StaticScraper implements Runnable {
         db.createStaticTable(Database.CREATE_TABLE_STATIC);
 
         try {
-            System.out.println("Static Scraper Running");
-            fetchSalePrice();
+            System.out.println("Static Scraper Running...");
+            fetchOriginalPrice();
             fetchProductID();
             fetchProductName();
             fetchProductURL();
             fetchImageURL();
 
-
             int minElement = determineMinimumElement(productNameList.size(), productIDList.size(), productURL_List.size(),
-                    productImageURL.size(), productSalePrice.size());
+                    productImageURL.size(), productPrice.size());
 
-            for (int i = 0; i < minElement; i++) {
-                db.insertIntoStaticTable(productIDList.get(i), productNameList.get(i), productURL_List.get(i), productImageURL.get(i), productSalePrice.get(i), Database.TABLE_STATIC_DATA, "Yes");
+            for (int element = 0; element < minElement; element++) {
+                db.insertIntoStaticTable(productIDList.get(element), productNameList.get(element),
+                        productURL_List.get(element), productImageURL.get(element), productPrice.get(element), Database.TABLE_STATIC_DATA, "In Stock");
             }
-            System.out.println("Static Scraper Finished");
-
+            System.out.println("Static Scraper Finished...");
 
         } catch (IOException e) {
-            System.out.println("Error" );
+            System.out.println("Error");
             e.printStackTrace();
         }
-
-
     }
 
     /**
      * Method retrieves product name information.
+     *
      * @throws IOException
      */
-    public void fetchProductName() throws IOException {
+    private void fetchProductName() throws IOException {
         productNameList = new ArrayList<>();
+
         Document page = Jsoup.connect(website).get();
+        Elements elementsByThumbnailImage = page.select("div.productThumbnailImage");
 
-        Elements elements = page.getElementsByClass("productDescLink");
+        for (Element element : elementsByThumbnailImage) {
+            Elements elementsByHref = element.getElementsByClass("productDescLink");
 
-        for (Element element : elements) {
-            String productName = element.attributes().get("title");
-            productNameList.add(productName);
+            for (Element elementsBySource : elementsByHref) {
+                productNameList.add(elementsBySource.attributes().get("title"));
+            }
         }
     }
 
@@ -92,57 +93,73 @@ public class StaticScraper implements Runnable {
         productIDList = new ArrayList<>();
 
         Document page = Jsoup.connect(website).get();
-        Elements elements = page.getElementsByClass("productDescLink");
+        Elements elementsByClass = page.select("div.productThumbnailImage");
 
-        for (Element element : elements) {
+        for (Element element : elementsByClass) {
+            Elements elementsBySource = element.getElementsByClass("productDescLink");
 
-            String productID = element.attributes().get("href");
-            String productIDCleanup = productID.substring(productID.lastIndexOf("?") + 4, productID.indexOf("&"));
-            productIDList.add(productIDCleanup);
+            for (Element elementsByLink : elementsBySource) {
+                String productID = elementsByLink.attributes().get("href");
+                productIDList.add(productID.substring(productID.indexOf("?") + 4, productID.indexOf("&")));
+            }
 
         }
+
     }
 
     /**
      * Method retrieves product URL information.
+     *
      * @throws IOException
      */
-    public void fetchProductURL() throws IOException {
+    private void fetchProductURL() throws IOException {
 
         productURL_List = new ArrayList<>();
 
         Document page = Jsoup.connect(website).get();
-        Elements elements = page.getElementsByClass("productDescLink");
+        Elements elements = page.select("div.productThumbnailImage");
+        for (Element elementsBySource : elements) {
+            Elements elementsByLink = elementsBySource.getElementsByClass("productDescLink");
 
-        for (Element element : elements) {
+            for (Element elementHref : elementsByLink) {
+                String productLink = "www.macys.com/" + elementHref.attributes().get("href");
+                productURL_List.add(productLink);
 
-            String productLink = "www.macys.com/" + element.attributes().get("href");
-            productURL_List.add(productLink);
+            }
+
         }
+
     }
 
     /**
      * Method retrieves the url of each image from each product.
+     *
      * @throws IOException
      */
-    public void fetchImageURL() throws IOException {
+    private void fetchImageURL() throws IOException {
 
         productImageURL = new ArrayList<>();
         Document page = Jsoup.connect(website).get();
-        Elements elements = page.getElementsByClass("thumbnailImage");
+        Elements elementsByClass = page.getElementsByClass("thumbnailImage");
 
-        for (Element element : elements) {
-            productImageURL.add(element.attributes().get("src"));
+        for (Element element : elementsByClass) {
+            Elements elementsByThumbnail = element.getElementsByClass("thumbnailImage");
+
+            for (Element elementsBySource : elementsByThumbnail) {
+                productImageURL.add(elementsBySource.attributes().get("src"));
+            }
         }
     }
 
+
     /**
      * Method retrieves the original price of each of the products.
+     *
      * @throws IOException
      */
-    public void fetchSalePrice() throws IOException {
+    private void fetchOriginalPrice() throws IOException {
 
-        productSalePrice = new ArrayList<>();
+        productPrice = new ArrayList<>();
 
         Document page = Jsoup.connect(website).get();
 
@@ -150,21 +167,22 @@ public class StaticScraper implements Runnable {
         Elements elements = page.select("span.regular.originalOrRegularPriceOnSale");
 
         for (Element element : elements) {
-            productSalePrice.add(element.text());
+            productPrice.add(element.text());
         }
     }
 
     /**
      * Method determines the minimum list size to be used in the for loop to
      * extract the product information.
+     *
      * @param productName Size of the productNameList.
-     * @param productID Size of the productIDList.
-     * @param productURL Size of the productURL_List.
-     * @param imageURL Size of the imageURList;
-     * @param price Size of the minimumElementList.
+     * @param productID   Size of the productIDList.
+     * @param productURL  Size of the productURL_List.
+     * @param imageURL    Size of the imageURList;
+     * @param price       Size of the minimumElementList.
      * @return Minimum list size of all 5 parameters.
      */
-    public int determineMinimumElement(int productName, int productID, int productURL, int imageURL, int price) {
+    private int determineMinimumElement(int productName, int productID, int productURL, int imageURL, int price) {
 
         int[] elements = {productName, productID, productURL, imageURL, price};
 
@@ -175,11 +193,7 @@ public class StaticScraper implements Runnable {
             if (element < minElement) {
                 minElement = element;
             }
-
         }
         return minElement;
-
     }
-
-
 }
